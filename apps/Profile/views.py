@@ -35,13 +35,13 @@ class AddressDetailView(APIView):
     def get(self, request, pk):
         address = self.get_address(request, pk)
         if not address:
-            return Response({'detail': 'Адрес не найден.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
         return Response(AddressSerializer(address).data)
 
     def patch(self, request, pk):
         address = self.get_address(request, pk)
         if not address:
-            return Response({'detail': 'Адрес не найден.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
         serializer = AddressSerializer(address, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -51,7 +51,7 @@ class AddressDetailView(APIView):
     def delete(self, request, pk):
         address = self.get_address(request, pk)
         if not address:
-            return Response({'detail': 'Адрес не найден.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
         address.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -70,7 +70,7 @@ class OrderDetailView(APIView):
     def get(self, request, pk):
         order = Order.objects.filter(user=request.user, id=pk).first()
         if not order:
-            return Response({'detail': 'Заказ не найден.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
         return Response(OrderSerializer(order).data)
 
 
@@ -80,15 +80,15 @@ class CreateOrderView(APIView):
     def post(self, request):
         cart = Cart.objects.filter(user=request.user).first()
         if not cart:
-            return Response({'detail': 'Корзина пуста.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST)
 
         cart_items = list(cart.items.select_related('dish'))
         if not cart_items:
-            return Response({'detail': 'Корзина пуста.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST)
 
         fulfillment = request.data.get('fulfillment', 'delivery')
         if fulfillment not in ['delivery', 'pickup']:
-            return Response({'fulfillment': 'Укажите delivery или pickup.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'fulfillment': 'Choose delivery or pickup.'}, status=status.HTTP_400_BAD_REQUEST)
 
         address = None
         address_text = ''
@@ -98,12 +98,12 @@ class CreateOrderView(APIView):
                 id=request.data.get('address_id'),
             ).first()
             if not address:
-                return Response({'address_id': 'Укажите адрес доставки.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'address_id': 'Provide a delivery address.'}, status=status.HTTP_400_BAD_REQUEST)
             address_text = address.address
 
         phone = request.data.get('phone') or str(request.user.phone or '')
         if not phone:
-            return Response({'phone': 'Укажите номер телефона.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'phone': 'Provide a phone number.'}, status=status.HTTP_400_BAD_REQUEST)
 
         subtotal = Decimal('0')
         for item in cart_items:
@@ -135,8 +135,9 @@ class CreateOrderView(APIView):
         Notification.objects.create(
             user=request.user,
             order=order,
-            title='Заказ принят',
-            message=f'Заказ #{order.id} принят в работу.',
+            
+            title='Order accepted',
+            message=f'Order #{order.id} is being prepared.',
         )
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 

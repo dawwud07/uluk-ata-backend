@@ -6,13 +6,13 @@ class Promotion(models.Model):
     background_image = models.ImageField(upload_to='estatic/images/')
     tag = models.CharField(max_length=100)
     valid_until = models.CharField(max_length=100 , null=True, blank=True)
-    ob_akcii = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     
     
     class Meta:
-        verbose_name = 'Акция'
-        verbose_name_plural = 'Акции  и скидки'
+        verbose_name = 'Promotion'
+        verbose_name_plural = 'Promotions'
         
 
 class PromotionCondition(models.Model):
@@ -20,8 +20,8 @@ class PromotionCondition(models.Model):
     condition_text = models.TextField()
     
     class Meta:
-        verbose_name = 'Условие акции'
-        verbose_name_plural = 'Условия акций'
+        verbose_name = 'Promotion condition'
+        verbose_name_plural = 'Promotion conditions'
         
 
 

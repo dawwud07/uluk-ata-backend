@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'drf_yasg',
-    'apps.Ckidki' , 
+    'apps.Discounts',
     'apps.Profile',
     'django_filters',
     'django_cleanup.apps.CleanupConfig',

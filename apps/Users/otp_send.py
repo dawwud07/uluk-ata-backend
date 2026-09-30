@@ -1,6 +1,6 @@
 import random 
 from rest_framework.views import APIView
-from .serializer import SendOTPSerializer , VerifyOTPSerializer , ResetPasswordSerilizer
+from .serializer import SendOTPSerializer, VerifyOTPSerializer, ResetPasswordSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.response import Response
@@ -30,8 +30,8 @@ class SendOTPCodeView(APIView):
         
         try:
             send_mail(
-                subject='Код подтверждения',
-                message=f'Ваш код: {code}',
+                subject='Verification code',
+                message=f'Your verification code is: {code}',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
                 fail_silently=False,
@@ -39,12 +39,12 @@ class SendOTPCodeView(APIView):
         except (OSError, TimeoutError):
             otp.delete()
             return Response(
-                {'error': 'Не удалось подключиться к почтовому серверу. Попробуйте позже.'},
+                {'error': 'Could not connect to the email server. Please try again later.'},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         
         
-        return Response({'message': 'Код отправлен'})
+        return Response({'detail': 'Verification code sent.'})
     
 
 
@@ -60,13 +60,13 @@ class VerifyOTPView(APIView):
         otp = OTPCode.objects.filter(email=email, code=code).first()
 
         if otp is None:
-            return Response({'error': 'Сначала запросите код'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Request a verification code first.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         if otp.is_expired():
             otp.delete()
-            return Response({'error': 'Код истек, попросите новый'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Verification code has expired. Request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({'message': 'Код подтвержден'}, status=status.HTTP_200_OK)
+        return Response({'message': 'Verification code confirmed.'}, status=status.HTTP_200_OK)
 
 
 
@@ -74,7 +74,7 @@ class VerifyOTPView(APIView):
     
 class ResetPasswordView(APIView):
     def post(self, request):
-        serializer = ResetPasswordSerilizer(data=request.data)
+        serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
@@ -84,16 +84,16 @@ class ResetPasswordView(APIView):
         otp = OTPCode.objects.filter(email = email , code = code).first()
         
         if otp is None:
-            return Response({'error': 'Сначала запросите код'} , status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Request a verification code first.'}, status=status.HTTP_401_UNAUTHORIZED)
         
         if otp.is_expired():
             otp.delete()
-            return Response({'error' : 'kod istek poprosi noviy'} , status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Verification code has expired. Request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             user = User.objects.get(email = email)
         except User.DoesNotExist:
-            return Response({'error' : 'polzovatel ne nayden'} , status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'User not found.'}, status=status.HTTP_401_UNAUTHORIZED)
         
         user.set_password(new_password)
         user.save()
@@ -101,5 +101,5 @@ class ResetPasswordView(APIView):
         otp.delete()
         
 
-        return Response({'message': 'Пароль изменен'}, status=status.HTTP_200_OK)
+        return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
     

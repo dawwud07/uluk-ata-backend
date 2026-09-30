@@ -15,7 +15,7 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(email=attrs['email'], password=attrs['password'])
 
         if not user:
-            raise serializers.ValidationError('nepravilen email ili lozinka')
+            raise serializers.ValidationError('Invalid email or password.')
 
         token, _ = Token.objects.get_or_create(user=user)
         return {"token": token.key, "email": user.email}
@@ -33,7 +33,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "paroli se ne sovpadaat"})
+            raise serializers.ValidationError({"password": "Passwords do not match."})
         return attrs
 
     def create(self, validated_data):
@@ -62,9 +62,9 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs: dict):
         user: User = self.context["request"].user
         if not user.check_password(attrs.get("old_password")):
-            raise serializers.ValidationError("Неверный старый пароль.")
+            raise serializers.ValidationError("The current password is incorrect.")
         if attrs.get("old_password") == attrs.get("new_password"):
-            raise serializers.ValidationError("Новый пароль не может совпадать со старым.")
+            raise serializers.ValidationError("The new password must differ from the current password.")
         return attrs
 
     def save(self, **kwargs):
@@ -74,7 +74,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         return user
 
 
-class DeactivateSeriliazer(serializers.Serializer):
+class DeactivateSerializer(serializers.Serializer):
     confirm = serializers.BooleanField()
 
 
@@ -88,7 +88,7 @@ class VerifyOTPSerializer(serializers.Serializer):
     code = serializers.CharField()
     
     
-class ResetPasswordSerilizer(serializers.Serializer):
+class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(min_length = 6 , max_length = 6)
     new_password = serializers.CharField(min_length= 8)

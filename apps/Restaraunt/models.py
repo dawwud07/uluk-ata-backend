@@ -12,8 +12,8 @@ class Institution(models.Model):
     cover_image = models.ImageField(upload_to='estate/images/')
 
     class Meta:
-        verbose_name = 'Заведение'
-        verbose_name_plural = 'Заведения'
+        verbose_name = 'Restaurant'
+        verbose_name_plural = 'Restaurants'
 
 
 class EstablishmentTab(models.Model):
@@ -22,8 +22,8 @@ class EstablishmentTab(models.Model):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='tabs')
 
     class Meta:
-        verbose_name = 'Вкладка заведения'
-        verbose_name_plural = 'Вкладки заведения'
+        verbose_name = 'Restaurant tab'
+        verbose_name_plural = 'Restaurant tabs'
 
 
 class Category(models.Model):
@@ -32,8 +32,8 @@ class Category(models.Model):
     tab = models.ForeignKey(EstablishmentTab, on_delete=models.CASCADE, related_name='categories')
 
     class Meta:
-        verbose_name = 'Категория'
-        verbose_name_plural = 'Категории'
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
 
 
 class Dish(models.Model):
@@ -46,8 +46,8 @@ class Dish(models.Model):
     ingredients = models.TextField(blank=True, null=True)
 
     class Meta:
-        verbose_name = 'Блюдо'
-        verbose_name_plural = 'Блюда'
+        verbose_name = 'Dish'
+        verbose_name_plural = 'Dishes'
 
 
 class FavoriteDish(models.Model):
@@ -56,8 +56,8 @@ class FavoriteDish(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Избранное блюдо'
-        verbose_name_plural = 'Избранные блюда'
+        verbose_name = 'Favorite dish'
+        verbose_name_plural = 'Favorite dishes'
         unique_together = ('user', 'dish')
 
 
@@ -66,8 +66,8 @@ class Cart(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Корзина'
-        verbose_name_plural = 'Корзины'
+        verbose_name = 'Cart'
+        verbose_name_plural = 'Carts'
 
 
 class CartItem(models.Model):
@@ -76,6 +76,6 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     class Meta:
-        verbose_name = 'Элемент корзины'
-        verbose_name_plural = 'Элементы корзины'
+        verbose_name = 'Cart item'
+        verbose_name_plural = 'Cart items'
         unique_together = ('cart', 'dish')

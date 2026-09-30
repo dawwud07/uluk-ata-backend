@@ -40,16 +40,16 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     class Meta:
-        verbose_name = "пользователь"
-        verbose_name_plural = "пользователи"
+        verbose_name = "user"
+        verbose_name_plural = "users"
 
     username = None 
-    email = models.EmailField(verbose_name = "почта" , unique = True  , blank = False , null = False)
+    email = models.EmailField(verbose_name = "email" , unique = True  , blank = False , null = False)
     
-    phone = PhoneNumberField(verbose_name = "телефон" , blank = True , null = True) 
+    phone = PhoneNumberField(verbose_name = "phone" , blank = True , null = True) 
     avatar = ResizedImageField(size=[500 , 500 ], crop=['middle', 'center'], upload_to='avatars/', blank=True, null=True, 
-                               verbose_name="аватар" , quality=90 , force_format='JPEG') 
-    date_of_birth = models.DateField(verbose_name = "дата рождения" , blank = True , null = True)
+                               verbose_name="avatar" , quality=90 , force_format='JPEG') 
+    date_of_birth = models.DateField(verbose_name = "date of birth" , blank = True , null = True)
     objects = UserManager()
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

@@ -4,7 +4,7 @@ from django.conf import settings
 
 class Address(models.Model):
 	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='addresses')
-	title = models.CharField(max_length=100, default='Дом')
+	title = models.CharField(max_length=100, default='Home')
 	address = models.CharField(max_length=255)
 	is_default = models.BooleanField(default=False)
 
@@ -18,11 +18,11 @@ class Address(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = [
-		('pending', 'В обработке' ) ,
-		('preparing', 'Готовится'),
-		('delivering', 'Доставляется'),
-		('completed', 'Завершен'),
-		('canceled', 'Отменен'),
+		('pending', 'Pending'),
+		('preparing', 'Preparing'),
+		('delivering', 'Delivering'),
+		('completed', 'Completed'),
+		('canceled', 'Canceled'),
 	]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
@@ -46,7 +46,7 @@ class OrderItem(models.Model):
 
 
 class Notification(models.Model):
-	order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='notifications', verbose_name='Заказ')
+	order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='notifications', verbose_name='Order')
 	food = models.ForeignKey('Restaraunt.Dish', on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications')
 	created_at = models.DateTimeField(auto_now_add=True)
 

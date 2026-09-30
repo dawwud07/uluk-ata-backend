@@ -5,7 +5,7 @@ from .models import Promotion, PromotionCondition
 class PromotionAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'tag', 'valid_until', 'is_active')
     list_filter = ('is_active',)
-    search_fields = ('name', 'tag', 'ob_akcii')
+    search_fields = ('name', 'tag', 'description')
 
 @admin.register(PromotionCondition)
 class PromotionConditionAdmin(admin.ModelAdmin):
