@@ -1,5 +1,8 @@
 from decimal import Decimal
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -77,6 +80,7 @@ class OrderDetailView(APIView):
 class CreateOrderView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request):
         cart = Cart.objects.filter(user=request.user).first()
         if not cart:
@@ -132,13 +136,17 @@ class CreateOrderView(APIView):
             )
 
         cart.items.all().delete()
-        Notification.objects.create(
+        notification = Notification.objects.create(
             user=request.user,
             order=order,
-            
             title='Order accepted',
             message=f'Order #{order.id} is being prepared.',
         )
+        notification_data = dict(NotificationSerializer(notification).data)
+        transaction.on_commit(lambda: async_to_sync(get_channel_layer().group_send)(
+            f'user_{request.user.pk}_notifications',
+            {'type': 'notification.created', 'data': notification_data},
+        ))
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 

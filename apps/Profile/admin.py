@@ -25,6 +25,6 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-	list_display = ('id', 'order', 'food', 'created_at')
-	list_filter = ('order__status',)
-	search_fields = ('order__user__email', 'food__name')
+	list_display = ('id', 'user', 'order', 'title', 'is_read', 'created_at')
+	list_filter = ('is_read', 'created_at')
+	search_fields = ('user__email', 'title', 'message')

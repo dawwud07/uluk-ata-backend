@@ -9,8 +9,12 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY . ./
+RUN useradd --create-home appuser && mkdir -p /app/media /app/staticfiles \
+    && chown -R appuser:appuser /app
+COPY --chown=appuser:appuser . ./
+
+USER appuser
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
