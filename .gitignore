@@ -155,3 +155,7 @@ cython_debug/
 
 apps/firebase/serviceAccountKey.json
 **/serviceAccountKey.json
+
+
+frontend/node_modules/
+**/node_modules/
