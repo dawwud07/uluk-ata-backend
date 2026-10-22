@@ -159,3 +159,17 @@ apps/firebase/serviceAccountKey.json
 
 frontend/node_modules/
 **/node_modules/
+
+
+@"
+frontend/
+"@ | Add-Content .gitignore
+
+
+
+# Чистим .gitignore от мусора и добавляем frontend/
+(Get-Content .gitignore) | Where-Object { $_ -notmatch '@"' -and $_ -notmatch '\| Add-Content' } | Set-Content .gitignore
+echo "`nfrontend/" >> .gitignore
+
+# Убираем frontend из отслеживания git (файлы на диске остаются)
+git rm -r --cached frontend -q
