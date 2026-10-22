@@ -1,69 +1,108 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Address(models.Model):
-	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='addresses')
-	title = models.CharField(max_length=100, default='Дом')
-	address = models.CharField(max_length=255)
-	entrance = models.CharField(max_length=50, blank=True)
-	floor = models.CharField(max_length=50, blank=True)
-	apartment = models.CharField(max_length=50, blank=True)
-	comment = models.TextField(blank=True)
-	is_default = models.BooleanField(default=False)
-	created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="addresses"
+    )
+    title = models.CharField(max_length=100, default="Дом")
+    address = models.CharField(max_length=255)
+    entrance = models.CharField(max_length=50, blank=True)
+    floor = models.CharField(max_length=50, blank=True)
+    apartment = models.CharField(max_length=50, blank=True)
+    comment = models.TextField(blank=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ("-is_default", "-created_at")
 
-	class Meta:
-		ordering = ('-is_default', '-created_at')
-
-	def __str__(self):
-		return f'{self.title}: {self.address}'
+    def __str__(self):
+        return f"{self.title}: {self.address}"
 
 
 class Order(models.Model):
-	STATUS_CHOICES = [
-		('accepted', 'Принят'),
-		('preparing', 'Preparing'),
-		('on_the_way', 'Курьер в пути'),
-		('delivered', 'Доставлен'),
-		('cancelled', 'Отменён'),
-	]
+    STATUS_CHOICES = [
+        ("accepted", "Принят"),
+        ("preparing", "Preparing"),
+        ("on_the_way", "Курьер в пути"),
+        ("delivered", "Доставлен"),
+        ("cancelled", "Отменён"),
+    ]
+    FULFILLMENT_CHOICES = [
+        ("delivery", "Доставка"),
+        ("pickup", "Самовывоз"),
+    ]
 
-	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
-	status = models.CharField(max_length=20, default='accepted')
-	fulfillment = models.CharField(max_length=20, default='delivery')
-	address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
-	address_snapshot = models.CharField(max_length=255, blank=True)
-	phone = models.CharField(max_length=50)
-	comment = models.TextField(blank=True)
-	subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-	delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-	created_at = models.DateTimeField(auto_now_add=True)
-	updated_at = models.DateTimeField(auto_now=True)
-	total = models.DecimalField(max_digits=10, decimal_places=2)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders"
+    )
+    number = models.CharField(max_length=20, unique=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="accepted")
+    fulfillment = models.CharField(
+        max_length=20, choices=FULFILLMENT_CHOICES, default="delivery"
+    )
+    address = models.ForeignKey(
+        Address, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders"
+    )
+    address_snapshot = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=50)
+    comment = models.TextField(blank=True)
+    promo = models.CharField(max_length=50, blank=True)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
 
-	class Meta:
-		ordering = ('-created_at',)
-
+    class Meta:
+        ordering = ("-created_at",)
 
 
 class OrderItem(models.Model):
-	order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-	dish = models.ForeignKey('Restaraunt.Dish', on_delete=models.SET_NULL, null=True, blank=True, related_name='order_items')
-	name = models.CharField(max_length=255)
-	price = models.DecimalField(max_digits=10, decimal_places=2)
-	quantity = models.PositiveIntegerField(default=1)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    dish = models.ForeignKey(
+        "Restaurant.Dish",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_items",
+    )
+    name = models.CharField(max_length=255)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.PositiveIntegerField(default=1)
 
 
 class Notification(models.Model):
-	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
-	order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
-	title = models.CharField(max_length=255)
-	message = models.TextField(blank=True)
-	is_read = models.BooleanField(default=False)
-	created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField(blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-	class Meta:
-		ordering = ('-created_at',)
+    class Meta:
+        ordering = ("-created_at",)
 
+
+class OrderReview(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="review")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="order_reviews"
+    )
+    rating = models.PositiveSmallIntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)

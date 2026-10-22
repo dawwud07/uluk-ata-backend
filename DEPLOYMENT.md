@@ -1,5 +1,9 @@
 # Deployment
 
+## Local development
+
+When `DJANGO_DEBUG` is not set, the project uses development settings: SQLite, an in-memory Channels layer, and a development-only secret key. Start the server with `python manage.py runserver`. Do not use these defaults in production; explicitly set `DJANGO_DEBUG=False` and configure `DJANGO_SECRET_KEY`, `DATABASE_URL`, and `REDIS_URL`.
+
 ## Docker Compose
 
 1. Copy `.env.example` to `.env` and replace the Django secret, database password, host names, and email settings. Keep `.env` out of version control.
@@ -15,6 +19,6 @@ Connect at `wss://<host>/ws/notifications/` using the Django session cookie or t
 ## Before production
 
 - Rotate credentials previously configured in source and set fresh values in `.env` or the deployment secret manager.
-- Resolve the outstanding model/migration drift reported by `python manage.py makemigrations --check --dry-run` for `Users` and `Restaraunt` before applying new migrations. Review any generated migration for data impact.
+- Resolve the outstanding model/migration drift reported by `python manage.py makemigrations --check --dry-run` for `Users` and `Restaurant` before applying new migrations. Review any generated migration for data impact.
 - Run the full test suite and `python manage.py check --deploy` in the production environment.
 - Configure TLS, backups for PostgreSQL and uploaded media, monitoring, and a deployment-specific health check.

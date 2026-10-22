@@ -2,8 +2,7 @@ from django.apps import AppConfig
 
 
 class DiscountsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.Discounts'
-    label = 'Ckidki'
-    verbose_name = 'Discounts'
-    
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.Discounts"
+    label = "Ckidki"
+    verbose_name = "Discounts"

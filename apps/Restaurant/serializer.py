@@ -1,23 +1,34 @@
 from rest_framework import serializers
-from .models import Institution, EstablishmentTab, Category, Dish, FavoriteDish, Cart, CartItem
 
-
-class EstablishmentTabSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EstablishmentTab
-        fields = '__all__'
+from .models import (
+    Cart,
+    CartItem,
+    Category,
+    Dish,
+    EstablishmentTab,
+    FavoriteDish,
+    Institution,
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = "__all__"
+
+
+class EstablishmentTabSerializer(serializers.ModelSerializer):
+    categories = CategorySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = EstablishmentTab
+        fields = "__all__"
 
 
 class DishListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dish
-        fields = ['id', 'name', 'description', 'price', 'image', 'category']
+        fields = ["id", "name", "description", "price", "image", "category"]
 
 
 class DishDetailSerializer(serializers.ModelSerializer):
@@ -25,21 +36,30 @@ class DishDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Dish
-        fields = ['id', 'name', 'description', 'price', 'image', 'cooking_time', 'ingredients', 'is_favorite']
+        fields = [
+            "id",
+            "name",
+            "description",
+            "price",
+            "image",
+            "cooking_time",
+            "ingredients",
+            "is_favorite",
+        ]
 
     def get_is_favorite(self, dish):
-        request = self.context.get('request')
-        
+        request = self.context.get("request")
+
         if request and request.user.is_authenticated:
             return FavoriteDish.objects.filter(user=request.user, dish=dish).exists()
-            
+
         return False
 
 
 class InstitutionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Institution
-        fields = '__all__'
+        fields = "__all__"
 
 
 class InstitutionDetailSerializer(serializers.ModelSerializer):
@@ -47,7 +67,7 @@ class InstitutionDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Institution
-        fields = '__all__'
+        fields = "__all__"
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -56,7 +76,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ['id', 'dish_id', 'dish', 'quantity']
+        fields = ["id", "dish_id", "dish", "quantity"]
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -65,7 +85,7 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'items', 'total_price']
+        fields = ["id", "user", "items", "total_price"]
 
     def get_total_price(self, obj):
         return sum(item.dish.price * item.quantity for item in obj.items.all())

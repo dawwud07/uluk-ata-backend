@@ -153,3 +153,5 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+apps/firebase/serviceAccountKey.json
+**/serviceAccountKey.json

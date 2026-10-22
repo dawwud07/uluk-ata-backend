@@ -1,17 +1,18 @@
-from decimal import Decimal
-
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.Restaraunt.models import Cart
+from api.permissions import IsSuperUser
 
-from .models import Address, Notification, Order, OrderItem
-from .serializers import AddressSerializer, NotificationSerializer, OrderSerializer
+from .models import Address, Notification, Order
+from .serializers import (
+    AddressSerializer,
+    NotificationSerializer,
+    OrderReviewSerializer,
+    OrderSerializer,
+)
+from .services import create_order_from_cart, set_order_status
 
 
 class AddressView(APIView):
@@ -24,6 +25,8 @@ class AddressView(APIView):
     def post(self, request):
         serializer = AddressSerializer(data=request.data)
         if serializer.is_valid():
+            if serializer.validated_data.get("is_default"):
+                Address.objects.filter(user=request.user).update(is_default=False)
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -38,15 +41,39 @@ class AddressDetailView(APIView):
     def get(self, request, pk):
         address = self.get_address(request, pk)
         if not address:
-            return Response({'detail': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Address not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         return Response(AddressSerializer(address).data)
 
     def patch(self, request, pk):
         address = self.get_address(request, pk)
         if not address:
-            return Response({'detail': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Address not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         serializer = AddressSerializer(address, data=request.data, partial=True)
         if serializer.is_valid():
+            if serializer.validated_data.get("is_default"):
+                Address.objects.filter(user=request.user).exclude(id=address.id).update(
+                    is_default=False
+                )
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        address = self.get_address(request, pk)
+        if not address:
+            return Response(
+                {"detail": "Address not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = AddressSerializer(address, data=request.data)
+        if serializer.is_valid():
+            if serializer.validated_data.get("is_default"):
+                Address.objects.filter(user=request.user).exclude(id=address.id).update(
+                    is_default=False
+                )
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -54,7 +81,9 @@ class AddressDetailView(APIView):
     def delete(self, request, pk):
         address = self.get_address(request, pk)
         if not address:
-            return Response({'detail': 'Address not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Address not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         address.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -73,80 +102,19 @@ class OrderDetailView(APIView):
     def get(self, request, pk):
         order = Order.objects.filter(user=request.user, id=pk).first()
         if not order:
-            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         return Response(OrderSerializer(order).data)
 
 
 class CreateOrderView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @transaction.atomic
     def post(self, request):
-        cart = Cart.objects.filter(user=request.user).first()
-        if not cart:
-            return Response({'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        cart_items = list(cart.items.select_related('dish'))
-        if not cart_items:
-            return Response({'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        fulfillment = request.data.get('fulfillment', 'delivery')
-        if fulfillment not in ['delivery', 'pickup']:
-            return Response({'fulfillment': 'Choose delivery or pickup.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        address = None
-        address_text = ''
-        if fulfillment == 'delivery':
-            address = Address.objects.filter(
-                user=request.user,
-                id=request.data.get('address_id'),
-            ).first()
-            if not address:
-                return Response({'address_id': 'Provide a delivery address.'}, status=status.HTTP_400_BAD_REQUEST)
-            address_text = address.address
-
-        phone = request.data.get('phone') or str(request.user.phone or '')
-        if not phone:
-            return Response({'phone': 'Provide a phone number.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        subtotal = Decimal('0')
-        for item in cart_items:
-            subtotal += item.dish.price * item.quantity
-
-        delivery_fee = Decimal('100') if fulfillment == 'delivery' else Decimal('0')
-        order = Order.objects.create(
-            user=request.user,
-            fulfillment=fulfillment,
-            address=address,
-            address_snapshot=address_text,
-            phone=phone,
-            comment=request.data.get('comment', ''),
-            subtotal=subtotal,
-            delivery_fee=delivery_fee,
-            total=subtotal + delivery_fee,
-        )
-
-        for item in cart_items:
-            OrderItem.objects.create(
-                order=order,
-                dish=item.dish,
-                name=item.dish.name,
-                price=item.dish.price,
-                quantity=item.quantity,
-            )
-
-        cart.items.all().delete()
-        notification = Notification.objects.create(
-            user=request.user,
-            order=order,
-            title='Order accepted',
-            message=f'Order #{order.id} is being prepared.',
-        )
-        notification_data = dict(NotificationSerializer(notification).data)
-        transaction.on_commit(lambda: async_to_sync(get_channel_layer().group_send)(
-            f'user_{request.user.pk}_notifications',
-            {'type': 'notification.created', 'data': notification_data},
-        ))
+        order, error = create_order_from_cart(request.user, request.data)
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 
@@ -162,5 +130,57 @@ class ReadNotificationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        count = Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
-        return Response({'marked_read': count})
+        count = Notification.objects.filter(user=request.user, is_read=False).update(
+            is_read=True
+        )
+        return Response({"marked_read": count})
+
+
+class UpdateOrderStatusView(APIView):
+    permission_classes = [IsSuperUser]
+
+    def patch(self, request, pk):
+        order = Order.objects.filter(id=pk).first()
+        if not order:
+            return Response(
+                {"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        new_status = request.data.get("status")
+        try:
+            order = set_order_status(order, new_status)
+        except ValueError:
+            return Response(
+                {"status": "Unknown status."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(OrderSerializer(order).data)
+
+
+class OrderReviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        order = Order.objects.filter(user=request.user, id=pk).first()
+        if not order:
+            return Response(
+                {"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        if hasattr(order, "review"):
+            return Response(
+                {"detail": "Order already reviewed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = OrderReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(order=order, user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PendingReviewsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        orders = Order.objects.filter(
+            user=request.user, status="delivered", review__isnull=True
+        )
+        return Response(OrderSerializer(orders, many=True).data)

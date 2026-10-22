@@ -1,17 +1,28 @@
 from django.contrib import admin
-from .models import User , OTPCode
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-
+from .models import OTPCode, User
 
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'first_name', 'last_name', 'is_staff')
+    list_display = ("email", "first_name", "last_name", "is_staff")
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        (_("Personal info"), {'fields': ('first_name', 'last_name', 'phone', 'avatar', 'date_of_birth')}),
+        (None, {"fields": ("email", "password")}),
+        (
+            _("Personal info"),
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                    "phone",
+                    "avatar",
+                    "date_of_birth",
+                    "gender",
+                )
+            },
+        ),
         (
             _("Permissions"),
             {
@@ -19,24 +30,24 @@ class UserAdmin(BaseUserAdmin):
                     "is_active",
                     "is_staff",
                     "is_superuser",
-                    "groups", 
+                    "groups",
                     "user_permissions",
                 ),
             },
         ),
         (_("Important dates"), {"fields": ("last_login", "date_joined")}),
-        
     )
     add_fieldsets = (
         (
-            None, {
+            None,
+            {
                 "classes": ("wide",),
-                "fields": ("email","usable_password" ,  "password1", "password2"),
-                
+                "fields": ("email", "usable_password", "password1", "password2"),
             },
         ),
     )
-    
-    ordering = ("email" , )
-    
+
+    ordering = ("email",)
+
+
 admin.site.register(OTPCode)
